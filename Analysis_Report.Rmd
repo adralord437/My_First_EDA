@@ -1,0 +1,208 @@
+---
+title: "Video Games Sales"
+author: "Angel Rodriguez"
+date: "4/23/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r include=FALSE}
+library(readr)
+library(tidyverse)
+library(knitr)
+vgsales <- read_csv("C:/Users/user/Desktop/LIBRARY/Practice Datasets/vgsales.csv")
+
+```
+
+
+## Un Analisis de Datos Explorativo
+
+# Introduccion
+
+La capacidad de procesamiento de las computadoras ha ido aumentando muy rapidamente en los ultimos 40 años, permitiendo hacer analisis y calculos muy complejos que antes no eran posibles. Esto ha llevado a los cientificos e investigadores a alejarse un poco del laboratorio convencional y a llevar a cabo sus pruebas y modelos en ambientes puramente virtuales. Sin embargo, los computadores tambien han hecho posible nuevas formas de ocio para el resto de las personas comunes. El epitome de estas nueva forma de ocio son (¡Lo adivinaste!) los videojuegos. 
+
+Este reporte intenta comunicar los hallazgos encontrados al analizar una base de datos con mas de 16,000 registros de las ventas de juegos de video para el periodo 1980 - 2018 retribuida de la pagina <vgchartz.com>. En el, como pronto veremos, encontramos que los generos mas vendidos a nivel regional son los generos de accion, disparos y deportes. Con una leve diferencia para los consumidores Japoneses.
+De la misma forma se reportan que compañias desarrolladoras de videojuegos son las que mas ventas tienen y que plataforma posee los titulos mas demandados por los consumidores a nivel global.
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+
+
+
+# Analisis 
+
+## Ventas por Genero
+
+Uno de los primeros analisis realizados fue encontrar que genero de videojuegos ha sido el mas vendido a nivel mundial para el periodo estudiado. Para ello, se ordenaron los registros segun su genero y se sumaron las ventas regionales y globales de cada titulo dentro del genero para conseguir las ventas totales. La variable para establecer que genero era el mas popular fueron las ventas globales.
+De esta forma, y tal vez no sorprendentemente, entre un total de 12 generos vemos a los juegos de accion, shooter y deportes ocupando los primeros lugares. Solamente estos tres generos han tenido ventas conjuntas de mas de 4,000 millones de dolares en los ultimos 40 años.
+Un resumen mas detallado de los generos y sus respectivas ventas por region y a nivel global estan en la siguiente tabla:
+```{r results='asis'} 
+sales_per_genre <- vgsales %>%
+        group_by(Genre) %>%
+        summarise(Total_Sales_NA = sum(NA_Sales),
+                  Total_Sales_EU = sum(EU_Sales),
+                  Total_Sales_JP = sum(JP_Sales),
+                  Global_Sales = sum(Global_Sales)
+                  ) %>%
+        arrange(desc(Global_Sales))
+kable(head(sales_per_genre), n = 11)
+```
+Tabla 2.1
+
+Seguidamente, procedimos a computar la porcion de mercado que cada region representaba para el total de ventas globales de cada genero.  Y en nuestros resultados vemos que para estos tres generos Norteamerica representa mas del ¡50% de sus ventas!, en tanto que Europa supone aproximadamente 30% de las ventas globales. Y, luego tenemos a Japon que no pasa de representar un 10% de mercado para estos generos.
+
+```{r results='asis'}
+Sales_per_region <- vgsales %>%
+        select(Name:Genre, NA_Sales:Global_Sales) %>%
+  group_by(Genre) %>%
+  arrange(desc(Global_Sales)) %>%
+        summarise(
+                prop_NA = round(sum(NA_Sales)/sum(Global_Sales), digits = 2),
+                prop_EU = round(sum(EU_Sales)/sum(Global_Sales), digits = 2),
+                prop_JP = round(sum(JP_Sales)/sum(Global_Sales), digits = 2)) %>%
+  filter(Genre %in% c("Action", "Shooter", "Sports"))
+kable(Sales_per_region)
+                
+  
+```
+Tabla 2.2
+
+Asimismo, al observar las ventas por genero a nivel regional, vemos que los consumidores en NA y EU tienen preferencias muy parecidas.
+
+```{r fig.width=9.2, fig.height=3.8}
+best.sell.genre.NA <- sales_per_genre %>%
+        select(Genre,Total_Sales_NA) %>%
+        arrange(desc(Total_Sales_NA))
+ggplot(best.sell.genre.NA) +
+        geom_bar(mapping = aes(x = Total_Sales_NA, y = reorder(Genre, Total_Sales_NA)), stat = "identity") +
+        labs(title = "Generos mas Vendidos en Norteamerica", subtitle = "1980 - 2020") +
+        xlab("Ventas totales (Millones de Dolares)") +
+        ylab("Genero") 
+```
+Figura 1.1
+
+```{r fig.width=9.2, fig.height=3.8}
+best.sell.genre.EU <- sales_per_genre %>%
+        select(Genre,Total_Sales_EU) %>%
+        arrange(desc(Total_Sales_EU))
+ggplot(best.sell.genre.EU) +
+        geom_bar(mapping = aes(x = Total_Sales_EU, y = reorder(Genre, Total_Sales_EU)), stat = "identity") +
+        labs(title = "Generos mas Vendidos en Europa", subtitle = "1980 - 2020") +
+        xlab("Ventas Totales en Europa (Millones de Dolares)") +
+        ylab("Genero") 
+```
+Figura 1.2
+
+
+Sin embargo, no vemos lo mismo con los consumidores en Japon, en Norteamerica, por ejemplo, el titulo mas vendido del genero accion es Grand Theft Auto.
+Mientras que en nuestro analisis notamos que los consumidores japoneses tienen preferencias ligeramente diferentes que sus contrapartes gamers de Norteamerica o Europa. 
+En Japon, el genero mas vendido son los juegos de rol, con titulos como Pokemon, Monster Hunter, Dragon Quest y Final Fantasy. Diferencias en que muy probablemente la cultura tenga algo que ver.
+
+```{r results='asis'}
+best.sell.genre.JP <- sales_per_genre %>%
+        select(Genre,Total_Sales_JP) %>%
+        arrange(desc(Total_Sales_JP)) %>%
+  mutate(prop_Sales = round(Total_Sales_JP/sum(Total_Sales_JP), digits = 2))
+kable(best.sell.genre.JP)
+```
+
+Tabla 2.3
+
+## Ventas por Compañia Desarrolladora
+
+Continuando con nuestro analisis, procedimos a evaluar que compañias desarrolladoras de videojuegos creaban los titulos mas populares. Metodologicamente,  se siguio usando la base de datos *vgsales* de la pagina <vgchartz.com>.  Asimismo, agrupamos los registros por compañia desarrolladora, para luego sumar individualmente sus ventas regionales y globales para conseguir el total por compañia. De igual forma, definimos el criterio de mejor compañia desarrolladora segun su nivel de ventas globales. Entre los resultados encontrados esta que la compañia desarrolladora que creaba los juegos mas populares (o mas vendidos) era la compañia Japonesa Nintendo, con volumenes de ventas globales de 1,786 millones de dolares para el periodo estudiado. Entre algunos de sus titulos mas vendidos estan:
+- Wii Sports (2006)
+- Super Mario Bros (1985)
+- Mario Kart Wii (2008)
+- Tetris (1989)
+
+No muy lejos de Nintendo en volumenes de venta, esta la compañia Estadounidense Electronic Arts, con ventas globales de mas de 1,000 millones de dolares para el periodo estudiado. Entre los titulos mas vendidos de la compañia estan:
+- FIFA 13,14,16
+- Battlefield 3
+- The Sims 3
+- Star Wars
+
+Estas dos compañias son las unicas con ventas mayores a el millar de millones de dolares, la demas casas desarrolladoras de videojuegos estan muy lejos de alcanzarlas estos volumenes de ventas. Entre un total de 579 compañias, se listan las primeras 5 en la siguiente tabla:
+```{r results='asis'}
+Publishers <- unique(vgsales$Publisher)  ## Publisher companies
+sales_publisher <- vgsales %>% 
+        group_by(Publisher) %>%
+        summarise(Total_NA = sum(NA_Sales),
+                  Total_EU = sum(EU_Sales),
+                  Total_JP = sum(JP_Sales),
+                  Total_Global = sum(Global_Sales)) %>%
+        arrange(desc(Total_Global))
+kable(head(sales_publisher, n = 5))
+```
+
+Tabla 2.4
+
+
+## Ventas por Plataforma
+
+Por ultimo, se analizo que plataformas (consolas) poseen los juegos mas populares. La ausencia de CrossPlay (La capacidad de jugar a un mismo titulo desde distintas plataformas) ha sido una de las estrategias de las compañias para lograr la lealtad de los consumidores, aunque su ausencia tambien puede ser explicada debido a las posibles ventajas injustas que algunos jugadores tendrian al enfrentarse a otros jugadores usando otra consola.
+Metologicamente, se siguio la practica de agrupar lo titulos segun la variable de interes para despues agregar sus ventas. Igualmente, volvemos a definir nuestro criterio de **Popular**, por el volumen de ventas globales.
+Entre nuestros hallazgos, encontramos que es el PS2 de la compañia Japonesa Sony Corporation, con ventas de 1,256 millones de dolares recaudados, es la plataforma que posee los juegos mas populares. Es decir, los titulos diseñados para ser jugados solo en esta plataforma son los que acumulan mas ventas nivel mundial. Seguidamente, con ventas de 980 millones de dolares, encontramos a la XBOX 360 de la compañia estadounidense Microsoft Corporation.
+
+```{r results='asis', fig.width=9.2, fig.height=4.4}
+Sales_platorm <- vgsales %>%                     ## Videogames made for ps2  had the best sales
+        group_by(Platform) %>%
+        summarise(Total_NA = sum(NA_Sales),
+                  Total_EU = sum(EU_Sales),
+                  Total_JP = sum(JP_Sales),
+                  Total_Global = sum(Global_Sales)) %>%
+  arrange(desc(Total_Global))
+
+ggplot(data = (Sales_platorm %>% filter(Total_Global > 100))) +
+        geom_bar(mapping = aes(x = Total_Global, y = reorder(Platform, Total_Global)), stat = "identity") +
+        labs(title = "Plataformas por Ventas de sus Titulos", subtitle = "1980 - 2020") +
+        xlab("Ventas Globales (Millones de Dolares)") +
+        ylab("Plataforma")
+
+```
+
+Figura 1.3
+
+Pero, interesantemente, si evaluamos a las plataformas por sus ventas regionales en vez de por sus ventas globales encontramos que, en el caso de Norteamerica, la plataforma con titulos mas populares es la X360 de Microsoft.
+En el caso de Japon, la plataforma mas popular es el Nintendo DS de Nintendo. 
+```{r results='asis'}
+Sales_platorm <- vgsales %>%                     ## Videogames made for ps2  had the best sales
+        group_by(Platform) %>%
+        summarise(Total_NA = sum(NA_Sales),
+                  Total_EU = sum(EU_Sales),
+                  Total_JP = sum(JP_Sales),
+                  Total_Global = sum(Global_Sales)) %>%
+        arrange(desc(Total_Global))
+kable(head(Sales_platorm), n = 10)
+
+```
+Tabla 2.5
+
+# Conclusion
+
+Entre los hallazgos a destacar de nuestro analisis estan las diferencias en preferencias entre lo que denominamos *Occidente* y *Oriente*. Los consumidores de Japon al parecer eligen juegos que involucran mucha mas complejidad que los consumidores occidentales que prefieren juegos mas simplistas y violentos.
+Igualmente, se demostro que las compañias Nintendo, EA, Activision, Sony Computer Entertainment y Ubisoft, son las casas productoras de videojuegos mas importantes del mundo.
+Por ultimo, se observo como cada pais tiende a comprar en mayor medida titulos que se puedan jugar en las consolas producidas por compañias locales, Microsoft para EEUU y Sony para Japon. 
+
+
+
